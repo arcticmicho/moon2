@@ -23,7 +23,7 @@ public class tk2dTileMapDemoFollowCam : MonoBehaviour {
 //		transform.position = end;
 		Vector3 aux = target.position;
 		aux.z = -10.0f;
-		
+		aux.y = transform.position.y;
 		transform.position = aux;
 		
 //		if (target.rigidbody != null && cam != null) {
