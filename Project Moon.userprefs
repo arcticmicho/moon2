@@ -1,0 +1,15 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\WalkController.cs">
+    <Files>
+      <File FileName="..\Tutorial4_Parallaxing\ParallaxLayer.cs" Line="12" Column="24" />
+      <File FileName="Assets\Scripts\tk2dTileMapDemoFollowCam.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\WalkController.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\WalkAnim.cs" Line="21" Column="25" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
