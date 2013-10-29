@@ -17,21 +17,16 @@ public class tk2dTileMapDemoFollowCam : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
-//		Vector3 start = transform.position;
-//		Vector3 end = Vector3.MoveTowards(start, target.position, followSpeed * Time.deltaTime);
-//		end.z = start.z;
-//		end.y = transform.position.y;
-//		transform.position = end;
-		Vector3 aux = target.position;
-		aux.z = transform.position.z;
-		aux.y = transform.position.y;
-		transform.position = aux;
-	
-//		if (target.rigidbody != null && cam != null) {
-//			float spd = target.rigidbody.velocity.magnitude;
-//			float scl = Mathf.Clamp01((spd - minZoomSpeed) / (maxZoomSpeed - minZoomSpeed));
-//			float targetZoomFactor = Mathf.Lerp(1, maxZoomFactor, scl);
-//			cam.ZoomFactor = Mathf.MoveTowards(cam.ZoomFactor, targetZoomFactor, 0.2f * Time.deltaTime);
-//		}
+		Vector3 start = transform.position;
+		Vector3 end = Vector3.MoveTowards(start, target.position, followSpeed * Time.deltaTime);
+		end.z = start.z;
+		transform.position = end;
+
+		if (target.rigidbody != null && cam != null) {
+			float spd = target.rigidbody.velocity.magnitude;
+			float scl = Mathf.Clamp01((spd - minZoomSpeed) / (maxZoomSpeed - minZoomSpeed));
+			float targetZoomFactor = Mathf.Lerp(1, maxZoomFactor, scl);
+			cam.ZoomFactor = Mathf.MoveTowards(cam.ZoomFactor, targetZoomFactor, 0.2f * Time.deltaTime);
+		}
 	}
 }

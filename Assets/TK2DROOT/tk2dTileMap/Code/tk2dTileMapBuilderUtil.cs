@@ -199,21 +199,18 @@ namespace tk2dRuntime.TileMap
 		/// Moves the chunk's gameobject's children to the prefab root
 		/// </summary>
 		public static void HideTileMapPrefabs(tk2dTileMap tileMap) {
-			if (tileMap.renderData == null) {
+			if (tileMap.renderData == null || tileMap.Layers == null) {
 				// No Render Data to parent Prefab Root to
 				return;
-			} else {
-				if (tileMap.PrefabsRoot == null) {
-					var go = tileMap.PrefabsRoot = new GameObject("Prefabs");
-					go.transform.parent = tileMap.renderData.transform;
-					go.transform.localPosition = Vector3.zero;
-					go.transform.localRotation = Quaternion.identity;
-					go.transform.localScale = Vector3.one;
-				}
 			}
 
-			if (tileMap.Layers == null)
-				return;
+			if (tileMap.PrefabsRoot == null) {
+				var go = tileMap.PrefabsRoot = new GameObject("Prefabs");
+				go.transform.parent = tileMap.renderData.transform;
+				go.transform.localPosition = Vector3.zero;
+				go.transform.localRotation = Quaternion.identity;
+				go.transform.localScale = Vector3.one;
+			}
 
 			int instListCount = tileMap.GetTilePrefabsListCount();
 			bool[] instExists = new bool[instListCount];
@@ -242,15 +239,25 @@ namespace tk2dRuntime.TileMap
 				}
 			}
 
+			Object[] prefabs = tileMap.data.tilePrefabs;
 			List<int> tileX = new List<int>();
 			List<int> tileY = new List<int>();
 			List<int> tileLayer = new List<int>();
 			List<GameObject> tileInst = new List<GameObject>();
 			for (int i = 0; i < instListCount; ++i) {
+				int x, y, layerIdx;
+				GameObject instance;
+				tileMap.GetTilePrefabsListItem(i, out x, out y, out layerIdx, out instance);
+				
+				// Is it already IN the list for some reason?
+				if (!instExists[i]) {
+					int tileId = tileMap.GetTile(x, y, layerIdx);
+					if (tileId >= 0 && tileId < prefabs.Length && prefabs[tileId] != null) {
+						instExists[i] = true;
+					}
+				}
+				
 				if (instExists[i]) {
-					int x, y, layerIdx;
-					GameObject instance;
-					tileMap.GetTilePrefabsListItem(i, out x, out y, out layerIdx, out instance);
 					tileX.Add(x);
 					tileY.Add(y);
 					tileLayer.Add(layerIdx);
@@ -259,6 +266,7 @@ namespace tk2dRuntime.TileMap
 					instance.transform.parent = tileMap.PrefabsRoot.transform;
 				}
 			}
+			
 			tileMap.SetTilePrefabsList(tileX, tileY, tileLayer, tileInst);
 		}
 		
@@ -268,7 +276,7 @@ namespace tk2dRuntime.TileMap
 		}
 
 		/// Creates render data for given tilemap
-		public static void CreateRenderData(tk2dTileMap tileMap, bool editMode)
+		public static void CreateRenderData(tk2dTileMap tileMap, bool editMode, Dictionary<Layer, bool> layersActive)
 		{
 			// Create render data
 			if (tileMap.renderData == null)
@@ -303,11 +311,11 @@ namespace tk2dRuntime.TileMap
 				if (layer.gameObject != null)
 				{
 #if UNITY_3_0 || UNITY_3_1 || UNITY_3_2 || UNITY_3_3 || UNITY_3_4 || UNITY_3_5 || UNITY_3_6 || UNITY_3_7 || UNITY_3_8 || UNITY_3_9
-					if (!editMode && layer.gameObject.active == false)
-						layer.gameObject.SetActiveRecursively(true);
+					if (!editMode &&  layersActive.ContainsKey(layer) && layer.gameObject.active != layersActive[layer])
+						layer.gameObject.SetActiveRecursively(layersActive[layer]);
 #else
-					if (!editMode && layer.gameObject.activeSelf == false)
-						layer.gameObject.SetActive(true);
+					if (!editMode && layersActive.ContainsKey(layer) && layer.gameObject.activeSelf != layersActive[layer])
+						layer.gameObject.SetActive(layersActive[layer]);
 #endif
 					
 					layer.gameObject.name = tileMap.data.Layers[layerId].name;
@@ -431,11 +439,20 @@ namespace tk2dRuntime.TileMap
 			rawTile = setValue ? (rawTile | (int)flag) : (rawTile & (int)(~flag));
 		}
 
-		public static Vector3 FlipSpriteVertexPosition(tk2dTileMap tileMap, tk2dSpriteDefinition spriteDef, Vector3 pos, bool flipH, bool flipV) {
+		public static Vector3 ApplySpriteVertexTileFlags(tk2dTileMap tileMap, tk2dSpriteDefinition spriteDef, Vector3 pos, bool flipH, bool flipV, bool rot90) {
 			float cx = tileMap.data.tileOrigin.x + 0.5f * tileMap.data.tileSize.x;
 			float cy = tileMap.data.tileOrigin.y + 0.5f * tileMap.data.tileSize.y;
-			if (flipH) pos.x = cx - (pos.x - cx);
-			if (flipV) pos.y = cy - (pos.y - cy);
+			float dx = pos.x - cx;
+			float dy = pos.y - cy;
+			if (rot90) {
+				float tmp = dx;
+				dx = dy;
+				dy = -tmp;
+			}
+			if (flipH) dx *= -1.0f;
+			if (flipV) dy *= -1.0f;
+			pos.x = cx + dx;
+			pos.y = cy + dy;
 			return pos;
 		}
 	}

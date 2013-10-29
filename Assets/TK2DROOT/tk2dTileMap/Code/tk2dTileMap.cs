@@ -8,6 +8,7 @@ public enum tk2dTileFlags {
 	None = 0x00000000,
 	FlipX = 0x01000000,
 	FlipY = 0x02000000,
+	Rot90 = 0x04000000,
 }
 
 [ExecuteInEditMode]
@@ -119,6 +120,11 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 				// Switched to edit mode while still in edit mode, rebuild
 				EndEditMode();
 			}
+			else {
+				if (_spriteCollectionInst != null && data != null && renderData == null) {
+					Build(BuildFlags.ForceBuild);
+				}
+			}
 		}
 		else
 		{
@@ -132,6 +138,20 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 			{
 				Build(BuildFlags.ForceBuild);
 			}
+			else if (_spriteCollectionInst != null && data != null && renderData == null) {
+				Build(BuildFlags.ForceBuild);
+			}
+		}
+	}
+
+	void OnDestroy() {
+		if (layers != null) {
+			foreach (tk2dRuntime.TileMap.Layer layer in layers) {
+				layer.DestroyGameData(this);
+			}
+		}
+		if (renderData != null) {
+			GameObject.DestroyImmediate(renderData);
 		}
 	}
 
@@ -157,7 +177,19 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 		ForceBuild = 2
 	};
 	
+
+	/// <summary>
+	/// Builds the tilemap. Call this after using the SetTile functions to
+	/// rebuild the affected partitions. Build only rebuilds affected partitions
+	/// and is efficent enough to use at runtime if you don't use Unity colliders.
+	/// Avoid building tilemaps every frame if you use Unity colliders as it will 
+	/// likely be too slow for runtime use.
+	/// </summary>
 	public void Build() { Build(BuildFlags.Default); }
+
+	/// <summary>
+	/// Like <see cref="T:Build"/> above, but forces a build of all partitions.
+	/// </summary>
 	public void ForceBuild() { Build(BuildFlags.ForceBuild); }
 	
 	// Clears all spawned instances, but retains the renderData object
@@ -165,6 +197,8 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 	{
 		if (layers == null)
 			return;
+
+		BuilderUtil.HideTileMapPrefabs( this );
 
 		for (int layerIdx = 0; layerIdx < layers.Length; ++layerIdx)
 		{
@@ -228,10 +262,29 @@ public class tk2dTileMap : MonoBehaviour, tk2dRuntime.ISpriteCollectionForceBuil
 		if (SpriteCollectionInst && SpriteCollectionInst.buildKey != spriteCollectionKey)
 			forceBuild = true;
 
-		if (forceBuild)
-			ClearSpawnedInstances();
+		// Remember active layers
+		Dictionary<Layer, bool> layersActive = new Dictionary<Layer,bool>();
+		if (layers != null)
+		{
+			for (int layerIdx = 0; layerIdx < layers.Length; ++layerIdx)
+			{
+				Layer layer = layers[layerIdx];
+				if (layer != null && layer.gameObject != null)
+				{
+#if UNITY_3_0 || UNITY_3_1 || UNITY_3_2 || UNITY_3_3 || UNITY_3_4 || UNITY_3_5 || UNITY_3_6 || UNITY_3_7 || UNITY_3_8 || UNITY_3_9
+					layersActive[layer] = layer.gameObject.active;
+#else
+					layersActive[layer] = layer.gameObject.activeSelf;
+#endif
+				}
+			}
+		}
 
-		BuilderUtil.CreateRenderData(this, _inEditMode);
+		if (forceBuild) {
+			ClearSpawnedInstances();
+		}
+
+		BuilderUtil.CreateRenderData(this, _inEditMode, layersActive);
 		
 		RenderMeshBuilder.Build(this, _inEditMode, forceBuild);
 		
